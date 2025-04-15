@@ -1,125 +1,202 @@
 #include "dcl.h"
+#include <fstream>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cassert>
 
-using namespace std;
-
-// Function to read a sparse matrix in CSR format
-void read_sparse_matrix_csr(const char *filename, data_t values[], int column_indices[], int row_ptr[], int *nnz) {
-    FILE *file = fopen(filename, "rb");
-    if (!file) {
-        perror("Failed to open file");
-        exit(1);
-    }
-
-    fread(nnz, sizeof(int), 1, file);
-    fread(values, sizeof(data_t), *nnz, file);
-    fread(column_indices, sizeof(int), *nnz, file);
-    fread(row_ptr, sizeof(int), N + 1, file);
-
-    fclose(file);
+// ---------- Binary File Reader ----------
+template<typename T>
+void read_binary_file(const std::string& filename, std::vector<T>& container) {
+    std::ifstream file(filename, std::ios::binary);
+    assert(file.is_open());
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.seekg(0);
+    container.resize(size / sizeof(T));
+    file.read(reinterpret_cast<char*>(container.data()), size);
+    file.close();
 }
 
-// Function to read a sparse matrix in CSC format
-void read_sparse_matrix_csc(const char *filename, data_t values[], int row_indices[], int col_ptr[], int *nnz) {
-    FILE *file = fopen(filename, "rb");
-    if (!file) {
-        perror("Failed to open file");
-        exit(1);
-    }
-
-    fread(nnz, sizeof(int), 1, file);
-    fread(values, sizeof(data_t), *nnz, file);
-    fread(row_indices, sizeof(int), *nnz, file);
-    fread(col_ptr, sizeof(int), M + 1, file);
-
-    fclose(file);
-}
-
-
-
-// Function to read a dense matrix from a binary file
-void read_dense_matrix(const char *filename, data_t C[N][K]) {
-    FILE *file = fopen(filename, "rb");
-    if (!file) {
-        perror("Failed to open file");
-        exit(1);
-    }
-
-    fread(C, sizeof(data_t), N * K, file);
-}
-
-// Sparse Matrix Multiplication: A (CSR) * B (CSC) = C (Dense)
-void sparse_matrix_multiply(data_t values_A[], int column_indices_A[], int row_ptr_A[], int nnz_A,
-                             data_t values_B[], int row_indices_B[], int col_ptr_B[], int nnz_B,
-                             float C[N][K]) 
-{
-    // Perform Sparse x Sparse Multiplication
-    for (int i = 0; i < N; i++) {
-        for (int idx_A = row_ptr_A[i]; idx_A < row_ptr_A[i + 1]; idx_A++) {
-            int k = column_indices_A[idx_A]; // Column index of A
-            float value_A = values_A[idx_A].to_float();
-
-            // Iterate over columns of B corresponding to row k
-            for (int idx_B = col_ptr_B[k]; idx_B < col_ptr_B[k + 1]; idx_B++) {
-                int j = row_indices_B[idx_B]; // Column index of B
-                float value_B = values_B[idx_B].to_float();
-
-                // Accumulate the product into C[i][j]
-                C[i][j] += value_A * value_B;
-            }
-        }
-    }
+template<typename T>
+int infer_size(const std::string& filename, int columns = 1) {
+    std::ifstream file(filename, std::ios::binary);
+    assert(file.is_open());
+    file.seekg(0, std::ios::end);
+    size_t size = file.tellg();
+    file.close();
+    return size / (sizeof(T) * columns);
 }
 
 int main() {
-    // Matrix A (CSR format)
-    data_t values_A[N * M];
-    int column_indices_A[N * M];
-    int row_ptr_A[N + 1];
-    int nnz_A;
+    // Set the directory path where the binary files reside.
+    std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
 
-    // Matrix B (CSC format)
-    data_t values_B[M * K];
-    int row_indices_B[M * K];
-    int col_ptr_B[M + 1];
-    int nnz_B;
+    // Raw data containers (vectors to temporarily hold file data)
+    std::vector<int> edge_index_raw;
+    std::vector<data_t> model_edge_prob;
+    std::vector<int> layer_id_vec;
+    std::vector<int> n_pixels_vec;
+    std::vector<data_t> hit_cartesian_vec;
+    std::vector<int> particle_id_vec;
+    std::vector<data_t> energy_vec;
+    std::vector<data_t> momentum_vec;
+    std::vector<data_t> track_origin_vec;
+    std::vector<int> trigger_node_vec;
+    std::vector<int> particle_type_vec;
+    std::vector<int> parent_particle_type_vec;
+    std::vector<data_t> interaction_point_vec;
+    std::vector<int> trigger_vec;  // Assuming stored as int: 0 or 1
+    std::vector<uint8_t> has_trigger_pair_raw;
 
-    // Output matrix C (Dense)
-    data_t C_ref[N][K];
-    data_t C_HLS[N][K];
+    // Determine number of edges and hits using file sizes
+    int num_edges = infer_size<int>(directory_path + "edge_index.bin", 2);
+    int num_hits  = infer_size<data_t>(directory_path + "hit_cartesian.bin", 3);
 
-    // Read matrices from files
-    char filename_A[50];
-    snprintf(filename_A, sizeof(filename_A), "A_matrix_csr_sparsity_%.2f.bin", SPARSITY);
-    read_sparse_matrix_csr(filename_A, values_A, column_indices_A, row_ptr_A, &nnz_A);
+    std::cout << "Number of edges: " << num_edges << std::endl;
+    std::cout << "Number of hits: " << num_hits << std::endl;
 
-    char filename_B[50];
-    snprintf(filename_B, sizeof(filename_B), "B_matrix_csc_sparsity_%.2f.bin", SPARSITY);
-    read_sparse_matrix_csc(filename_B, values_B, row_indices_B, col_ptr_B, &nnz_B);
+    // Read binary files
+    read_binary_file(directory_path + "edge_index.bin", edge_index_raw);
+    read_binary_file(directory_path + "model_edge_probability.bin", model_edge_prob);
+    read_binary_file(directory_path + "layer_id.bin", layer_id_vec);
+    read_binary_file(directory_path + "n_pixels.bin", n_pixels_vec);
+    read_binary_file(directory_path + "hit_cartesian.bin", hit_cartesian_vec);
+    read_binary_file(directory_path + "particle_id.bin", particle_id_vec);
+    read_binary_file(directory_path + "energy.bin", energy_vec);
+    read_binary_file(directory_path + "momentum.bin", momentum_vec);
+    read_binary_file(directory_path + "track_origin.bin", track_origin_vec);
+    read_binary_file(directory_path + "trigger_node.bin", trigger_node_vec);
+    read_binary_file(directory_path + "particle_type.bin", particle_type_vec);
+    read_binary_file(directory_path + "parent_particle_type.bin", parent_particle_type_vec);
+    read_binary_file(directory_path + "interaction_point.bin", interaction_point_vec);
+    read_binary_file(directory_path + "trigger.bin", trigger_vec);
+    read_binary_file(directory_path + "has_trigger_pair.bin", has_trigger_pair_raw);
 
-    char filename_C[50];
-    snprintf(filename_C, sizeof(filename_B), "C_matrix_result_sparsity_%.2f.bin", SPARSITY);
-    read_dense_matrix(filename_C, C_ref);
-    
-    // Initialize output matrix C_HLS
-    for (int i = 0; i < N; i++) {
-        for (int j = 0; j < K; j++) {
-            C_HLS[i][j] = 0;
-        }
+    // Convert trigger flag and has_trigger_pair to bool (nonzero is true)
+    bool trigger_flag = (trigger_vec.size() > 0 && trigger_vec[0] != 0);
+    bool has_trigger_pair = (has_trigger_pair_raw.size() > 0 && has_trigger_pair_raw[0] != 0);
+
+    // ---------- Pack Data into Fixed-Size Arrays ----------
+    int edge_index_arr[2][MAX_EDGES];
+    for (int i = 0; i < num_edges; i++) {
+        edge_index_arr[0][i] = edge_index_raw[2 * i];
+        edge_index_arr[1][i] = edge_index_raw[2 * i + 1];
     }
 
-    // Call HLS kernel to perform SpMM
-    sparse_matrix_multiply_HLS(values_A, column_indices_A, row_ptr_A,
-                           values_B, row_indices_B, col_ptr_B, C_HLS);
+    data_t model_edge_probability_arr[MAX_EDGES];
+    for (int i = 0; i < num_edges; i++) {
+        model_edge_probability_arr[i] = model_edge_prob[i];
+    }
 
- 	float error = 0;
-	// compare HLS output and reference output tensor
-	for(int i = 0; i < N; i++) {
-		for(int j = 0; j < K; j++) {
-			error += std::pow(C_HLS[i][j].to_float() - C_ref[i][j].to_float(), 2);
-		}
-	}
-	error = error / (N * K);
-	printf("MSE: %.8f\n", error);
+    int layer_id_arr[MAX_HITS];
+    int n_pixels_arr[MAX_HITS];
+    data_t hit_cartesian_arr[MAX_HITS][3];
+    int particle_id_arr[MAX_HITS];
+    data_t energy_arr[MAX_HITS];
+    data_t momentum_arr[MAX_HITS][3];
+    data_t track_origin_arr[MAX_HITS][3];
+    int trigger_node_arr[MAX_HITS];
+    int particle_type_arr[MAX_HITS];
+    int parent_particle_type_arr[MAX_HITS];
+
+    for (int i = 0; i < num_hits; i++) {
+        layer_id_arr[i] = layer_id_vec[i];
+        n_pixels_arr[i] = n_pixels_vec[i];
+    }
+    for (int i = 0; i < num_hits; i++) {
+        for (int j = 0; j < 3; j++) {
+            hit_cartesian_arr[i][j] = hit_cartesian_vec[3 * i + j];
+        }
+    }
+    for (int i = 0; i < num_hits; i++) {
+        particle_id_arr[i] = particle_id_vec[i];
+    }
+    for (int i = 0; i < num_hits; i++) {
+        energy_arr[i] = energy_vec[i];
+    }
+    for (int i = 0; i < num_hits; i++) {
+        for (int j = 0; j < 3; j++) {
+            momentum_arr[i][j] = momentum_vec[3 * i + j];
+        }
+    }
+    for (int i = 0; i < num_hits; i++) {
+        for (int j = 0; j < 3; j++) {
+            track_origin_arr[i][j] = track_origin_vec[3 * i + j];
+        }
+    }
+    for (int i = 0; i < num_hits; i++) {
+        trigger_node_arr[i] = trigger_node_vec[i];
+    }
+    for (int i = 0; i < num_hits; i++) {
+        particle_type_arr[i] = particle_type_vec[i];
+        parent_particle_type_arr[i] = parent_particle_type_vec[i];
+    }
+    data_t interaction_point_arr[3];
+    for (int i = 0; i < 3; i++) {
+        interaction_point_arr[i] = interaction_point_vec[i];
+    }
+
+    // ---------- Call the Track Reconstruction Kernel ----------
+    EventInfo event_info; // This structure will be filled by the kernel.
+    compute_tracks_HLS(
+        edge_index_arr,
+        model_edge_probability_arr,
+        num_edges,
+        layer_id_arr,
+        n_pixels_arr,
+        hit_cartesian_arr,
+        particle_id_arr,
+        energy_arr,
+        momentum_arr,
+        track_origin_arr,
+        trigger_node_arr,
+        particle_type_arr,
+        parent_particle_type_arr,
+        num_hits,
+        interaction_point_arr,
+        trigger_flag,
+        has_trigger_pair,
+        event_info
+    );
+
+    // ---------- Output Results ----------
+    std::cout << "\n--- Reconstructed Event Information ---" << std::endl;
+    // Global Event-Level Information
+    std::cout << "Global Interaction Point: [" << event_info.interaction_point[0] << ", "
+              << event_info.interaction_point[1] << ", " << event_info.interaction_point[2] << "]" << std::endl;
+    std::cout << "Trigger: " << event_info.trigger << std::endl;
+    std::cout << "Has Trigger Pair: " << event_info.has_trigger_pair << std::endl;
+    std::cout << "Number of Tracks: " << event_info.num_tracks << std::endl;
+
+    // Print details for each track.
+    for (int i = 0; i < event_info.num_tracks; i++) {
+        std::cout << "\nTrack " << i << ":" << std::endl;
+        std::cout << "  Energy: " << event_info.energy[i] << std::endl;
+        std::cout << "  Momentum: [" 
+                  << event_info.momentum[i][0] << ", " 
+                  << event_info.momentum[i][1] << ", " 
+                  << event_info.momentum[i][2] << "]" << std::endl;
+        std::cout << "  Track Origin: [" 
+                  << event_info.track_origin[i][0] << ", " 
+                  << event_info.track_origin[i][1] << ", " 
+                  << event_info.track_origin[i][2] << "]" << std::endl;
+        std::cout << "  Trigger Node: " << event_info.trigger_node[i] << std::endl;
+        std::cout << "  Particle ID: " << event_info.particle_id[i] << std::endl;
+        std::cout << "  Particle Type: " << event_info.particle_type[i] << std::endl;
+        std::cout << "  Parent Particle Type: " << event_info.parent_particle_type[i] << std::endl;
+        
+        // Print per-layer group information.
+        for (int j = 0; j < NUM_LAYERS; j++) {
+            std::cout << "  Layer Group " << j << ":" << std::endl;
+            std::cout << "    n_pixels: " << event_info.n_pixels[i][j] << std::endl;
+            std::cout << "    track_n_hits: " << event_info.track_n_hits[i][j] << std::endl;
+            std::cout << "    track_hits: ["
+                      << event_info.track_hits[i][3*j] << ", "
+                      << event_info.track_hits[i][3*j+1] << ", "
+                      << event_info.track_hits[i][3*j+2] << "]" << std::endl;
+        }
+    }
 
     return 0;
 }
