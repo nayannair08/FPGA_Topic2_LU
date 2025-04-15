@@ -37,8 +37,8 @@ struct EventInfo {
 };
 
 // Prototype for the HLS kernel function that reconstructs the tracks.
+// The new parameter "intt_required" implements the inner tracker requirement.
 void compute_tracks_HLS(
-    // Input arrays (all pre‑converted from NPZ to binary):
     const int edge_index[2][MAX_EDGES],
     const data_t model_edge_probability[MAX_EDGES],
     const int num_edges,
@@ -56,7 +56,7 @@ void compute_tracks_HLS(
     const data_t interaction_point_arr[3],
     bool trigger,
     bool has_trigger_pair,
-    // Output (reconstructed event information):
+    bool intt_required,
     EventInfo &event_info
 );
 

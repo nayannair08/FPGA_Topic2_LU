@@ -30,8 +30,8 @@ int infer_size(const std::string& filename, int columns = 1) {
 
 int main() {
     // Set the directory path where the binary files reside.
-    std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
-
+    //std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
+    std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event100607116/"; // Adjust to your directory
     // Raw data containers (vectors to temporarily hold file data)
     std::vector<int> edge_index_raw;
     std::vector<data_t> model_edge_prob;
@@ -76,6 +76,9 @@ int main() {
     // Convert trigger flag and has_trigger_pair to bool (nonzero is true)
     bool trigger_flag = (trigger_vec.size() > 0 && trigger_vec[0] != 0);
     bool has_trigger_pair = (has_trigger_pair_raw.size() > 0 && has_trigger_pair_raw[0] != 0);
+    
+    // Define intt_required flag (set to true if an inner tracker hit is required).
+    bool intt_required = true;
 
     // ---------- Pack Data into Fixed-Size Arrays ----------
     int edge_index_arr[2][MAX_EDGES];
@@ -157,14 +160,16 @@ int main() {
         interaction_point_arr,
         trigger_flag,
         has_trigger_pair,
+        intt_required,  // Pass the new inner tracker requirement flag.
         event_info
     );
 
     // ---------- Output Results ----------
     std::cout << "\n--- Reconstructed Event Information ---" << std::endl;
-    // Global Event-Level Information
+    // Global event-level information.
     std::cout << "Global Interaction Point: [" << event_info.interaction_point[0] << ", "
-              << event_info.interaction_point[1] << ", " << event_info.interaction_point[2] << "]" << std::endl;
+              << event_info.interaction_point[1] << ", " 
+              << event_info.interaction_point[2] << "]" << std::endl;
     std::cout << "Trigger: " << event_info.trigger << std::endl;
     std::cout << "Has Trigger Pair: " << event_info.has_trigger_pair << std::endl;
     std::cout << "Number of Tracks: " << event_info.num_tracks << std::endl;
@@ -185,8 +190,7 @@ int main() {
         std::cout << "  Particle ID: " << event_info.particle_id[i] << std::endl;
         std::cout << "  Particle Type: " << event_info.particle_type[i] << std::endl;
         std::cout << "  Parent Particle Type: " << event_info.parent_particle_type[i] << std::endl;
-        
-        // Print per-layer group information.
+        // Print per-layer-group information.
         for (int j = 0; j < NUM_LAYERS; j++) {
             std::cout << "  Layer Group " << j << ":" << std::endl;
             std::cout << "    n_pixels: " << event_info.n_pixels[i][j] << std::endl;
@@ -197,6 +201,5 @@ int main() {
                       << event_info.track_hits[i][3*j+2] << "]" << std::endl;
         }
     }
-
     return 0;
 }

@@ -6,14 +6,7 @@
 // -----------------------
 // Recursive DFS Function
 // -----------------------
-// This function recursively visits nodes in the graph, building a connected component.
-// Parameters:
-//   node         : current node to process.
-//   current_track: array to store nodes of the current connected component (track).
-//   track_size   : reference to the current track size (number of nodes recorded so far).
-//   visited      : boolean array marking which nodes have been visited.
-//   adj_list     : adjacency list for each node.
-//   adj_count    : number of neighbors for each node.
+// Recursively visits nodes in the graph to build a connected component.
 void dfs_recursive(
     int node,
     int current_track[MAX_TRACK_SIZE],
@@ -36,6 +29,7 @@ void dfs_recursive(
 // Kernel Function: compute_tracks_HLS
 // ------------------------------
 // Reconstructs tracks from raw detector data using recursive DFS.
+// "intt_required" indicates that only tracks with at least one hit with layer_id >= 3 are kept.
 void compute_tracks_HLS(
     const int edge_index[2][MAX_EDGES],
     const data_t model_edge_probability[MAX_EDGES],
@@ -54,6 +48,7 @@ void compute_tracks_HLS(
     const data_t interaction_point_arr[3],
     bool trigger,
     bool has_trigger_pair,
+    bool intt_required,
     EventInfo &event_info
 ) {
     // ----- Step 1: Filter Edges -----
@@ -69,14 +64,12 @@ void compute_tracks_HLS(
     }
     
     // ----- Step 2: Build the Adjacency List -----
-    int num_nodes = num_hits; // Each hit corresponds to a node.
+    int num_nodes = num_hits; // Each hit is a node.
     int adj_list[MAX_HITS][MAX_NEIGHBORS];
     int adj_count[MAX_HITS];
-    // Initialize all neighbor counts to zero.
     for (int i = 0; i < num_nodes; i++) {
         adj_count[i] = 0;
     }
-    // Fill the adjacency list using filtered edges.
     for (int i = 0; i < filtered_count; i++) {
         int u = filtered_edges[0][i];
         int v = filtered_edges[1][i];
@@ -99,14 +92,11 @@ void compute_tracks_HLS(
     int tracks[MAX_TRACKS][MAX_TRACK_SIZE];
     int track_sizes[MAX_TRACKS];
     int track_count = 0;
-    
-    // For each node, if it hasn't been visited, start a recursive DFS.
     for (int i = 0; i < num_nodes; i++) {
         if (!visited[i]) {
             int current_track[MAX_TRACK_SIZE];
             int current_size = 0;
             dfs_recursive(i, current_track, current_size, visited, adj_list, adj_count);
-            // Copy current_track to the global tracks array.
             for (int k = 0; k < current_size; k++) {
                 tracks[track_count][k] = current_track[k];
             }
@@ -116,7 +106,7 @@ void compute_tracks_HLS(
     }
     
     // ----- Step 4: Process Each Track -----
-    // Zero out the output EventInfo buffers.
+    // Initialize output buffers.
     for (int i = 0; i < MAX_TRACKS; i++) {
         for (int j = 0; j < NUM_LAYERS; j++) {
             event_info.n_pixels[i][j] = 0;
@@ -137,18 +127,29 @@ void compute_tracks_HLS(
     }
     
     int processed_tracks = 0;
-    // For each reconstructed track, compute weighted averages and assign track parameters.
-    for (int t = 0; t < track_count && t < MAX_TRACKS; t++) {
-        // For each detector layer group.
+    // For each track, optionally apply intt_required filtering.
+    for (int t = 0; t < track_count && processed_tracks < MAX_TRACKS; t++) {
+        if (intt_required) {
+            bool valid_track = false;
+            for (int k = 0; k < track_sizes[t]; k++) {
+                int hit_idx = tracks[t][k];
+                if (layer_id[hit_idx] >= 3) {
+                    valid_track = true;
+                    break;
+                }
+            }
+            if (!valid_track) {
+                continue; // Skip track if inner tracker requirement is not met.
+            }
+        }
+        // Process per-layer group information.
         for (int j = 0; j < NUM_LAYERS; j++) {
             data_t weighted_sum[3] = {0, 0, 0};
             int sum_pixels = 0;
             int count_hits = 0;
-            // Loop over the hits in the current track.
             for (int k = 0; k < track_sizes[t]; k++) {
                 int hit_idx = tracks[t][k];
                 int hit_layer = layer_id[hit_idx];
-                // Check if the hit falls within the current layer group.
                 if (hit_layer >= layer_start[j] && hit_layer <= layer_end[j]) {
                     int pix = n_pixels_arr[hit_idx];
                     sum_pixels += pix;
@@ -158,7 +159,6 @@ void compute_tracks_HLS(
                     count_hits++;
                 }
             }
-            // Compute weighted average hit position for this layer group.
             for (int d = 0; d < 3; d++) {
                 if (sum_pixels > 0)
                     event_info.track_hits[processed_tracks][3*j + d] = weighted_sum[d] / sum_pixels;
@@ -169,8 +169,7 @@ void compute_tracks_HLS(
             event_info.track_n_hits[processed_tracks][j] = count_hits;
         }
         
-        // Choose a representative hit for overall track parameters.
-        // Here, we simply choose the first hit in the track.
+        // Choose a representative hit (first hit) for overall track parameters.
         int rep_hit = tracks[t][0];
         event_info.energy[processed_tracks] = energy_arr[rep_hit];
         for (int d = 0; d < 3; d++) {
