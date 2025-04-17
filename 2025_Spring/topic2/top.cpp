@@ -3,32 +3,10 @@
 // Define a maximum number of neighbors per node.
 #define MAX_NEIGHBORS 64
 
-// -----------------------
-// Recursive DFS Function
-// -----------------------
-// Recursively visits nodes in the graph to build a connected component.
-void dfs_recursive(
-    int node,
-    int current_track[MAX_TRACK_SIZE],
-    int &track_size,
-    bool visited[MAX_HITS],
-    int adj_list[MAX_HITS][MAX_NEIGHBORS],
-    int adj_count[MAX_HITS]
-) {
-    visited[node] = true;
-    current_track[track_size++] = node;
-    for (int j = 0; j < adj_count[node]; j++) {
-        int neigh = adj_list[node][j];
-        if (!visited[neigh]) {
-            dfs_recursive(neigh, current_track, track_size, visited, adj_list, adj_count);
-        }
-    }
-}
-
 // ------------------------------
 // Kernel Function: compute_tracks_HLS
 // ------------------------------
-// Reconstructs tracks from raw detector data using recursive DFS.
+// Reconstructs tracks from raw detector data using iterative DFS.
 // "intt_required" indicates that only tracks with at least one hit with layer_id >= 3 are kept.
 void compute_tracks_HLS(
     const int edge_index[2][MAX_EDGES],
@@ -67,9 +45,11 @@ void compute_tracks_HLS(
     int num_nodes = num_hits; // Each hit is a node.
     int adj_list[MAX_HITS][MAX_NEIGHBORS];
     int adj_count[MAX_HITS];
+    // Initialize all neighbor counts to zero.
     for (int i = 0; i < num_nodes; i++) {
         adj_count[i] = 0;
     }
+    // Fill the adjacency list using filtered edges.
     for (int i = 0; i < filtered_count; i++) {
         int u = filtered_edges[0][i];
         int v = filtered_edges[1][i];
@@ -83,20 +63,42 @@ void compute_tracks_HLS(
         }
     }
     
-    // ----- Step 3: Connected Components via Recursive DFS -----
+    // ----- Step 3: Connected Components via Iterative DFS -----
     bool visited[MAX_HITS];
     for (int i = 0; i < num_nodes; i++) {
         visited[i] = false;
     }
-    
+
     int tracks[MAX_TRACKS][MAX_TRACK_SIZE];
     int track_sizes[MAX_TRACKS];
     int track_count = 0;
+
+    // Iterate over every node. For each unvisited node, perform an iterative DFS.
     for (int i = 0; i < num_nodes; i++) {
         if (!visited[i]) {
             int current_track[MAX_TRACK_SIZE];
             int current_size = 0;
-            dfs_recursive(i, current_track, current_size, visited, adj_list, adj_count);
+            int stack[MAX_HITS];
+            int stack_ptr = 0;
+            
+            // Push the starting node.
+            stack[stack_ptr++] = i;
+            visited[i] = true;
+            
+            // DFS loop.
+            while (stack_ptr > 0) {
+                int node = stack[--stack_ptr];
+                current_track[current_size++] = node;
+                // Visit all neighbors.
+                for (int j = 0; j < adj_count[node]; j++) {
+                    int neigh = adj_list[node][j];
+                    if (!visited[neigh]) {
+                        visited[neigh] = true;
+                        stack[stack_ptr++] = neigh;
+                    }
+                }
+            }
+            // Copy current_track into the global tracks array.
             for (int k = 0; k < current_size; k++) {
                 tracks[track_count][k] = current_track[k];
             }
@@ -106,7 +108,7 @@ void compute_tracks_HLS(
     }
     
     // ----- Step 4: Process Each Track -----
-    // Initialize output buffers.
+    // Initialize EventInfo output buffers.
     for (int i = 0; i < MAX_TRACKS; i++) {
         for (int j = 0; j < NUM_LAYERS; j++) {
             event_info.n_pixels[i][j] = 0;
@@ -142,6 +144,7 @@ void compute_tracks_HLS(
                 continue; // Skip track if inner tracker requirement is not met.
             }
         }
+        
         // Process per-layer group information.
         for (int j = 0; j < NUM_LAYERS; j++) {
             data_t weighted_sum[3] = {0, 0, 0};
@@ -150,6 +153,7 @@ void compute_tracks_HLS(
             for (int k = 0; k < track_sizes[t]; k++) {
                 int hit_idx = tracks[t][k];
                 int hit_layer = layer_id[hit_idx];
+                // Check if the hit falls within the current layer group.
                 if (hit_layer >= layer_start[j] && hit_layer <= layer_end[j]) {
                     int pix = n_pixels_arr[hit_idx];
                     sum_pixels += pix;
