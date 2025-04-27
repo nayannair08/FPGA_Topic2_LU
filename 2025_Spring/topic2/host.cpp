@@ -43,8 +43,8 @@ int main() {
     std::vector<data_t> momentum_vec;
     std::vector<data_t> track_origin_vec;
     std::vector<int> trigger_node_vec;
-    std::vector<int> particle_type_vec;
-    std::vector<int> parent_particle_type_vec;
+    std::vector<data_t> particle_type_vec;
+    std::vector<data_t> parent_particle_type_vec;
     std::vector<data_t> interaction_point_vec;
     std::vector<int> trigger_vec;  // Assuming stored as int: 0 or 1
     std::vector<uint8_t> has_trigger_pair_raw;
@@ -100,8 +100,8 @@ int main() {
     data_t momentum_arr[MAX_HITS][3];
     data_t track_origin_arr[MAX_HITS][3];
     int trigger_node_arr[MAX_HITS];
-    int particle_type_arr[MAX_HITS];
-    int parent_particle_type_arr[MAX_HITS];
+    data_t particle_type_arr[MAX_HITS];
+    data_t parent_particle_type_arr[MAX_HITS];
 
     for (int i = 0; i < num_hits; i++) {
         layer_id_arr[i] = layer_id_vec[i];
@@ -114,7 +114,6 @@ int main() {
     }
     for (int i = 0; i < num_hits; i++) {
         particle_id_arr[i] = particle_id_vec[i];
-        std::cout << "Particle ID: " << particle_id_arr[i] << std::endl;
     }
     for (int i = 0; i < num_hits; i++) {
         energy_arr[i] = energy_vec[i];

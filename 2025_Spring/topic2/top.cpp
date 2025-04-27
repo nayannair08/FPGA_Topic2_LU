@@ -1,5 +1,5 @@
 #include "dcl.h"
-#define DEBUG
+// #define DEBUG
 
 // Define a maximum number of neighbors per node.
 #define MAX_NEIGHBORS 64
@@ -21,8 +21,8 @@ void compute_tracks_HLS(
     const data_t momentum_arr[MAX_HITS][3],
     const data_t track_origin_arr[MAX_HITS][3],
     const int trigger_node_arr[MAX_HITS],
-    const int particle_type_arr[MAX_HITS],
-    const int parent_particle_type_arr[MAX_HITS],
+    const data_t particle_type_arr[MAX_HITS],
+    const data_t parent_particle_type_arr[MAX_HITS],
     const int num_hits,
     const data_t interaction_point_arr[3],
     bool trigger,

@@ -30,8 +30,8 @@ struct EventInfo {
     data_t track_origin[MAX_TRACKS][3];            // Estimated origin for each track
     int trigger_node[MAX_TRACKS];                  // Index of the trigger hit for each track
     data_t particle_id[MAX_TRACKS];                   // Representative particle ID for each track
-    int particle_type[MAX_TRACKS];                 // Particle type classification for each track
-    int parent_particle_type[MAX_TRACKS];          // Parent particle type for each track
+    data_t particle_type[MAX_TRACKS];                 // Particle type classification for each track
+    data_t parent_particle_type[MAX_TRACKS];          // Parent particle type for each track
     data_t track_hits[MAX_TRACKS][3 * NUM_LAYERS];   // Weighted hit positions (per layer group)
     int track_n_hits[MAX_TRACKS][NUM_LAYERS];        // Count of hits per layer group for each track
     int num_tracks;                                // Total number of tracks reconstructed
@@ -51,8 +51,8 @@ void compute_tracks_HLS(
     const data_t momentum_arr[MAX_HITS][3],
     const data_t track_origin_arr[MAX_HITS][3],
     const int trigger_node_arr[MAX_HITS],
-    const int particle_type_arr[MAX_HITS],
-    const int parent_particle_type_arr[MAX_HITS],
+    const data_t particle_type_arr[MAX_HITS],
+    const data_t parent_particle_type_arr[MAX_HITS],
     const int num_hits,
     const data_t interaction_point_arr[3],
     bool trigger,
