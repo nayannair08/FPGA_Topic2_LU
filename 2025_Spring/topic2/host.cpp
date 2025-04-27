@@ -31,14 +31,14 @@ int infer_size(const std::string& filename, int columns = 1) {
 int main() {
     // Set the directory path where the binary files reside.
     //std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
-    std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event100607116/"; // Adjust to your directory
+    std::string directory_path = "/nethome/vvenkata35/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
     // Raw data containers (vectors to temporarily hold file data)
     std::vector<int> edge_index_raw;
     std::vector<data_t> model_edge_prob;
     std::vector<int> layer_id_vec;
     std::vector<int> n_pixels_vec;
     std::vector<data_t> hit_cartesian_vec;
-    std::vector<int> particle_id_vec;
+    std::vector<data_t> particle_id_vec;
     std::vector<data_t> energy_vec;
     std::vector<data_t> momentum_vec;
     std::vector<data_t> track_origin_vec;
@@ -78,7 +78,7 @@ int main() {
     bool has_trigger_pair = (has_trigger_pair_raw.size() > 0 && has_trigger_pair_raw[0] != 0);
     
     // Define intt_required flag (set to true if an inner tracker hit is required).
-    bool intt_required = true;
+    bool intt_required = false;
 
     // ---------- Pack Data into Fixed-Size Arrays ----------
     int edge_index_arr[2][MAX_EDGES];
@@ -95,7 +95,7 @@ int main() {
     int layer_id_arr[MAX_HITS];
     int n_pixels_arr[MAX_HITS];
     data_t hit_cartesian_arr[MAX_HITS][3];
-    int particle_id_arr[MAX_HITS];
+    data_t particle_id_arr[MAX_HITS];
     data_t energy_arr[MAX_HITS];
     data_t momentum_arr[MAX_HITS][3];
     data_t track_origin_arr[MAX_HITS][3];
@@ -114,6 +114,7 @@ int main() {
     }
     for (int i = 0; i < num_hits; i++) {
         particle_id_arr[i] = particle_id_vec[i];
+        std::cout << "Particle ID: " << particle_id_arr[i] << std::endl;
     }
     for (int i = 0; i < num_hits; i++) {
         energy_arr[i] = energy_vec[i];

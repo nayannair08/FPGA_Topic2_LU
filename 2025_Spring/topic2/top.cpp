@@ -16,7 +16,7 @@ void compute_tracks_HLS(
     const int layer_id[MAX_HITS],
     const int n_pixels_arr[MAX_HITS],
     const data_t hit_cartesian[MAX_HITS][3],
-    const int particle_id_arr[MAX_HITS],
+    const data_t particle_id_arr[MAX_HITS],
     const data_t energy_arr[MAX_HITS],
     const data_t momentum_arr[MAX_HITS][3],
     const data_t track_origin_arr[MAX_HITS][3],
@@ -248,15 +248,14 @@ void compute_tracks_HLS(
             event_info.track_n_hits[processed_tracks][j] = count_hits;
         }
 
-        // int rep_hit = tracks[t][0];
-        int pids[MAX_TRACK_SIZE][3];
+        data_t pids[MAX_TRACK_SIZE][3];
         for (int i = 0; i < MAX_TRACK_SIZE; i++) {
             pids[i][0] = -1;
             pids[i][1] = -1;
             pids[i][2] = -1;
         }
         for (int i = 0; i < track_sizes[t]; i++) {
-            int p_id = particle_id_arr[tracks[t][i]];
+            data_t p_id = particle_id_arr[tracks[t][i]];
             for (int j = 0; j < MAX_TRACK_SIZE; j++) {
                 if (pids[j][0] == -1) {
                     pids[j][0] = p_id;
@@ -280,7 +279,6 @@ void compute_tracks_HLS(
             }
         }
         int rep_hit = tracks[t][track_particle_idx];
-        
 
         event_info.energy[processed_tracks] = energy_arr[rep_hit];
         for (int d = 0; d < 3; d++) {

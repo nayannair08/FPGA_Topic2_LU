@@ -3,6 +3,7 @@
 
 #include <ap_fixed.h>
 #include <hls_math.h>
+#include <cmath> // for std::isnan
 
 // You may choose to use ap_fixed<16,5> if desired, but here we use float.
 typedef float data_t;
@@ -28,7 +29,7 @@ struct EventInfo {
     bool has_trigger_pair;                         // Indicates if the event has a paired trigger
     data_t track_origin[MAX_TRACKS][3];            // Estimated origin for each track
     int trigger_node[MAX_TRACKS];                  // Index of the trigger hit for each track
-    int particle_id[MAX_TRACKS];                   // Representative particle ID for each track
+    data_t particle_id[MAX_TRACKS];                   // Representative particle ID for each track
     int particle_type[MAX_TRACKS];                 // Particle type classification for each track
     int parent_particle_type[MAX_TRACKS];          // Parent particle type for each track
     data_t track_hits[MAX_TRACKS][3 * NUM_LAYERS];   // Weighted hit positions (per layer group)
@@ -45,7 +46,7 @@ void compute_tracks_HLS(
     const int layer_id[MAX_HITS],
     const int n_pixels_arr[MAX_HITS],
     const data_t hit_cartesian[MAX_HITS][3],
-    const int particle_id_arr[MAX_HITS],
+    const data_t particle_id_arr[MAX_HITS],
     const data_t energy_arr[MAX_HITS],
     const data_t momentum_arr[MAX_HITS][3],
     const data_t track_origin_arr[MAX_HITS][3],
