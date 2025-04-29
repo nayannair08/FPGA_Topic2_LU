@@ -388,6 +388,8 @@ void compute_tracks_HLS(
 
 
     for (int event = 0; event < NUM_EVENTS; event++) {
+
+        #pragma HLS dataflow
 		
         int filtered_edges[2][MAX_EDGES];
         int filtered_count = 0;
