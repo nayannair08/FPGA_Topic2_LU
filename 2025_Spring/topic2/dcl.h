@@ -9,9 +9,9 @@
 typedef float data_t;
 
 // Define maximum sizes (adjust as necessary)
-#define MAX_HITS       1024    // Maximum number of hits per event
-#define MAX_EDGES      2048    // Maximum number of edges per event
-#define MAX_TRACKS     256     // Maximum number of tracks (connected components)
+#define MAX_HITS       261    // Maximum number of hits per event
+#define MAX_EDGES      80    // Maximum number of edges per event
+#define MAX_TRACKS     99     // Maximum number of tracks (connected components)
 #define MAX_TRACK_SIZE MAX_HITS  // Maximum number of hits in one track
 #define NUM_LAYERS     5       // Number of detector layer groups
 #define NUM_EVENTS     2       //
