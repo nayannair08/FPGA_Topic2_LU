@@ -1,37 +1,24 @@
-open_project project_1
+open_project project_3
 
 # set top function of the HLS design
 set_top compute_tracks_HLS
 
 # add source file
-add_files top.cpp
+add_files top.cpp 
 
 # add testbench
-add_files -tb host.cpp
+add_files -tb host.cpp 
 
 # add data file
-add_files -tb event100607116/edge_index.bin
-add_files -tb event100607116/edge_phi_slope.bin
-add_files -tb event100607116/edge_z0.bin
-add_files -tb event100607116/energy.bin
-add_files -tb event100607116/has_trigger_pair.bin
-add_files -tb event100607116/hit_cartesian.bin
-add_files -tb event100607116/hit_cylindrical.bin
-add_files -tb event100607116/interaction_point.bin
-add_files -tb event100607116/layer_id.bin
-add_files -tb event100607116/model_edge_probability.bin
-add_files -tb event100607116/momentum.bin
-add_files -tb event100607116/n_pixels.bin
-add_files -tb event100607116/parent_particle_type.bin
-add_files -tb event100607116/particle_id.bin
-add_files -tb event100607116/particle_type.bin
-add_files -tb event100607116/phi_slope_max.bin
-add_files -tb event100607116/track_origin.bin
-add_files -tb event100607116/trigger.bin
-add_files -tb event100607116/trigger_node.bin
-add_files -tb event100607116/z0_max.bin
+# grab every .bin in any event directory two levels under ./converted
+set all_event_bins [glob -nocomplain ./event_dir/*/event*/*.bin]
 
-open_solution "solution8"
+# add them as test-bench data files
+add_files -tb $all_event_bins
+
+open_solution "solution2"
+
+#config_compile -cflags "-std=c++17" -lflags "-lstdc++fs"
 
 # FPGA part and clock configuration
 set_part {xczu3eg-sbva484-1-e}
@@ -40,10 +27,10 @@ set_part {xczu3eg-sbva484-1-e}
 #create_clock -period 4 -name default
 
 # C synthesis for HLS design, generating RTL
-#csynth_design
+csynth_design
 
 # C/RTL co-simulation; can be commented if not needed
-#cosim_design
+cosim_design
 
 # export generated RTL as an IP; can be commented if not needed
 export_design -format ip_catalog -flow impl

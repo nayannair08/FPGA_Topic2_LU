@@ -5,16 +5,16 @@
 #define MAX_NEIGHBORS 64
 
 void filtering_edges(
-    const int event,
+    const int& event,
     const int edge_index[NUM_EVENTS][2][MAX_EDGES],
     const data_t model_edge_probability[NUM_EVENTS][MAX_EDGES],
     const int num_edges[NUM_EVENTS],
     int edge_index_local[2][MAX_EDGES],
     data_t model_edge_probability_local[MAX_EDGES],
-    int num_edges_local,
+    int& num_edges_local,
     int filtered_edges[2][MAX_EDGES],
-    int filtered_count,
-    int event1
+    int& filtered_count,
+    int& event1
 ) {
     event1 = event;
     //============================================================================================================
@@ -37,16 +37,27 @@ void filtering_edges(
             filtered_count++;
         }
     }
+    //print debug info
+    #ifdef DEBUG
+    std::cout << "Event: " << event << std::endl;
+    std::cout << "Filtered Edges: " << filtered_count << std::endl;
+    for (int i = 0; i < filtered_count; i++) {
+        std::cout << "(" << filtered_edges[0][i] << ", " << filtered_edges[1][i] << ")" << std::endl;
+    }
+    #endif
 }
 
 void adjacency_list(
-    const int num_nodes,
+    int& event1,
+    const int& num_nodes,
     const int filtered_edges[2][MAX_EDGES],
-    const int filtered_count,
+    const int& filtered_count,
     int adj_list[MAX_HITS][MAX_NEIGHBORS],
     int adj_count[MAX_HITS],
-    int max_node
+    int& max_node,
+    int& event2
 ) {
+    event2 = event1;
     //============================================================================================================
 	//event
 	//filtered edges
@@ -75,14 +86,17 @@ void adjacency_list(
 }
 
 void iterative_dfs (
-    const int num_nodes,
-    const int max_node,
+    int& event2,
+    const int& num_nodes,
+    const int& max_node,
     const int adj_list[MAX_HITS][MAX_NEIGHBORS],
     const int adj_count[MAX_HITS],
     int tracks[MAX_TRACKS][MAX_TRACK_SIZE],
     int track_sizes[MAX_TRACKS],
-    int track_count
+    int& track_count,
+    int& event3
 ) {
+    event3 = event2;
     //============================================================================================================
 	//Adj list
 	//Adj count
@@ -124,8 +138,8 @@ void iterative_dfs (
 }
 
 void process_tracks (
-    int event,
-    const int track_count,
+    int& event,
+    const int& track_count,
     const int tracks[MAX_TRACKS][MAX_TRACK_SIZE],
     const int track_sizes[MAX_TRACKS],
     const int layer_id[NUM_EVENTS][MAX_HITS],
@@ -154,9 +168,9 @@ void process_tracks (
     data_t particle_type_arr_local[MAX_HITS],
     data_t parent_particle_type_arr_local[MAX_HITS],
     data_t interaction_point_arr_local[3],
-    bool trigger_local,
-    bool has_trigger_pair_local,
-    bool intt_required_local
+    bool& trigger_local,
+    bool& has_trigger_pair_local,
+    bool& intt_required_local
 ) {
     //============================================================================================================
 	//event
@@ -402,6 +416,8 @@ void compute_tracks_HLS(
         int track_sizes[MAX_TRACKS];
         int track_count = 0;
         int event1 = 0;
+        int event2 = 0;
+        int event3 = 0;
 
         // ----- Step 1: Filter Edges -----
         filtering_edges(
@@ -416,28 +432,97 @@ void compute_tracks_HLS(
             filtered_count,
             event1
         );
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Event: " << event << std::endl;
+        std::cout << "Filtered Edges: " << filtered_count << std::endl;
+        for (int i = 0; i < filtered_count; i++) {
+            std::cout << "(" << filtered_edges[0][i] << ", " << filtered_edges[1][i] << ")" << std::endl;
+        }
+        #endif
+
         // ----- Step 2: Build the Adjacency List -----
         adjacency_list(
+            event1,
             num_nodes,
             filtered_edges,
             filtered_count,
             adj_list,
             adj_count,
-            max_node
+            max_node,
+            event2
         );
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Adjacency List: " << std::endl;
+        for (int i = 0; i < num_nodes; i++) {
+            std::cout << "Node " << i << ": ";
+            for (int j = 0; j < adj_count[i]; j++) {
+                std::cout << adj_list[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Adj Count: " << std::endl;
+        for (int i = 0; i < num_nodes; i++) {
+            std::cout << "Node " << i << ": " << adj_count[i] << std::endl;
+        }
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Max Node: " << max_node << std::endl;
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Num Nodes: " << num_nodes << std::endl;
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Num Edges: " << num_edges_local << std::endl;
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Num Hits: " << num_hits_local << std::endl;
+        #endif
         // ----- Step 3: Connected Components via Iterative DFS -----
         iterative_dfs(
+            event2,
             num_nodes,
             max_node,
             adj_list,
             adj_count,
             tracks,
             track_sizes,
-            track_count
+            track_count,
+            event3 
         );
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Tracks: " << std::endl;
+        for (int i = 0; i < track_count; i++) {
+            std::cout << "Track " << i << ": ";
+            for (int j = 0; j < track_sizes[i]; j++) {
+                std::cout << tracks[i][j] << " ";
+            }
+            std::cout << std::endl;
+        }
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Track Sizes: " << std::endl;
+        for (int i = 0; i < track_count; i++) {
+            std::cout << "Track " << i << ": " << track_sizes[i] << std::endl;
+        }
+        #endif
+        //print debug info
+        #ifdef DEBUG
+        std::cout << "Track Count: " << track_count << std::endl;
+        #endif
         // ----- Step 4: Process Each Track -----
         process_tracks(
-            event1,
+            event3,
             track_count,
             tracks,
             track_sizes,
