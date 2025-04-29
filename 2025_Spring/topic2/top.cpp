@@ -49,15 +49,19 @@ void filtering_edges(
 
 void adjacency_list(
     int& event1,
-    const int& num_nodes,
+    int& num_nodes,
+    const int num_hits[NUM_EVENTS],
     const int filtered_edges[2][MAX_EDGES],
     const int& filtered_count,
     int adj_list[MAX_HITS][MAX_NEIGHBORS],
     int adj_count[MAX_HITS],
     int& max_node,
-    int& event2
+    int& event2,
+    int& num_nodes3
 ) {
     event2 = event1;
+    num_nodes = num_hits[event1];
+    num_nodes3 = num_nodes;
     //============================================================================================================
 	//event
 	//filtered edges
@@ -394,23 +398,25 @@ void compute_tracks_HLS(
     int trigger_node_arr_local[MAX_HITS];
     data_t particle_type_arr_local[MAX_HITS];
     data_t parent_particle_type_arr_local[MAX_HITS];
-    int num_hits_local = 0;
+    // int num_hits_local = 0;
     data_t interaction_point_arr_local[3];
     bool trigger_local = false;
     bool has_trigger_pair_local = false;
     bool intt_required_local = false;
 
 
+    #pragma HLS dataflow
+
     for (int event = 0; event < NUM_EVENTS; event++) {
 
-        #pragma HLS dataflow
+        // #pragma HLS dataflow
 		
         int filtered_edges[2][MAX_EDGES];
         int filtered_count = 0;
         int adj_list[MAX_HITS][MAX_NEIGHBORS];
         int adj_count[MAX_HITS];
-        num_hits_local = num_hits[event];
-        int num_nodes = num_hits_local; // Each hit is a node.
+        // num_hits_local = num_hits[event];
+        // int num_nodes = num_hits_local; // Each hit is a node.
         int max_node = 0;
         int tracks[MAX_TRACKS][MAX_TRACK_SIZE];
         int track_sizes[MAX_TRACKS];
@@ -418,6 +424,8 @@ void compute_tracks_HLS(
         int event1 = 0;
         int event2 = 0;
         int event3 = 0;
+        int num_nodes_local2 = 0;
+        int num_nodes_local3 = 0;
 
         // ----- Step 1: Filter Edges -----
         filtering_edges(
@@ -444,13 +452,15 @@ void compute_tracks_HLS(
         // ----- Step 2: Build the Adjacency List -----
         adjacency_list(
             event1,
-            num_nodes,
+            num_nodes_local2,
+            num_hits,
             filtered_edges,
             filtered_count,
             adj_list,
             adj_count,
             max_node,
-            event2
+            event2,
+            num_nodes_local3
         );
         //print debug info
         #ifdef DEBUG
@@ -489,7 +499,7 @@ void compute_tracks_HLS(
         // ----- Step 3: Connected Components via Iterative DFS -----
         iterative_dfs(
             event2,
-            num_nodes,
+            num_nodes_local3,
             max_node,
             adj_list,
             adj_count,
