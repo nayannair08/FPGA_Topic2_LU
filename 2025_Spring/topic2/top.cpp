@@ -259,28 +259,44 @@ void process_tracks_update (
     bool trigger_local[1],
     bool has_trigger_pair_local[1]
 ) {
-    for (int t = 0; t < track_count[0] && processed_tracks[0] < MAX_TRACKS; t++) {
+	#pragma HLS array_interface variable=wighted_sum complete
+	#pragma HLS array_interface variable=sum_pixels complete
+	#pragma HLS array_interface variable=count_hits complete
+	#pragma HLS array_interface variable=rep_hit complete
+	#pragma HLS array_interface variable=particle_id_arr_local complete
+	#pragma HLS array_interface variable=energy_arr_local complete
+	#pragma HLS array_interface variable=momentum_arr_local complete
+	#pragma HLS array_interface variable=track_origin_arr_local complete
+	#pragma HLS array_interface variable=trigger_node_arr_local complete
+	#pragma HLS array_interface variable=particle_type_arr_local complete
+	#pragma HLS array_interface variable=parent_particle_type_arr_local complete
+	#pragma HLS array_interface variable=interaction_point_arr_local complete
+
+	int pt = processed_tracks[0];
+    for (int t = 0; t < track_count[0] && pt < MAX_TRACKS; t++) {
+		#pragma HLS PIPELINE
         for (int j = 0; j < NUM_LAYERS; j++) {
             for (int d = 0; d < 3; d++) {
                 if (sum_pixels[t][j] > 0)
-                    event_info[event[0]].track_hits[processed_tracks[0]][3*j + d] = weighted_sum[t][j][d] / sum_pixels[t][j];
+                    event_info[event[0]].track_hits[pt][3*j + d] = weighted_sum[t][j][d] / sum_pixels[t][j];
                 else
-                    event_info[event[0]].track_hits[processed_tracks[0]][3*j + d] = 0;
+                    event_info[event[0]].track_hits[pt][3*j + d] = 0;
             }
-            event_info[event[0]].n_pixels[processed_tracks[0]][j] = sum_pixels[t][j];
-            event_info[event[0]].track_n_hits[processed_tracks[0]][j] = count_hits[t][j];
+            event_info[event[0]].n_pixels[pt][j] = sum_pixels[t][j];
+            event_info[event[0]].track_n_hits[pt][j] = count_hits[t][j];
         }
-        event_info[event[0]].energy[processed_tracks[0]] = energy_arr_local[rep_hit[t]];
+        event_info[event[0]].energy[pt] = energy_arr_local[rep_hit[t]];
         for (int d = 0; d < 3; d++) {
-            event_info[event[0]].momentum[processed_tracks[0]][d] = momentum_arr_local[rep_hit[t]][d];
-            event_info[event[0]].track_origin[processed_tracks[0]][d] = track_origin_arr_local[rep_hit[t]][d];
+            event_info[event[0]].momentum[pt][d] = momentum_arr_local[rep_hit[t]][d];
+            event_info[event[0]].track_origin[pt][d] = track_origin_arr_local[rep_hit[t]][d];
         }
-        event_info[event[0]].trigger_node[processed_tracks[0]] = trigger_node_arr_local[rep_hit[t]];
-        event_info[event[0]].particle_id[processed_tracks[0]] = particle_id_arr_local[rep_hit[t]];
-        event_info[event[0]].particle_type[processed_tracks[0]] = particle_type_arr_local[rep_hit[t]];
-        event_info[event[0]].parent_particle_type[processed_tracks[0]] = parent_particle_type_arr_local[rep_hit[t]];
-        processed_tracks[0]++;
+        event_info[event[0]].trigger_node[pt] = trigger_node_arr_local[rep_hit[t]];
+        event_info[event[0]].particle_id[pt] = particle_id_arr_local[rep_hit[t]];
+        event_info[event[0]].particle_type[pt] = particle_type_arr_local[rep_hit[t]];
+        event_info[event[0]].parent_particle_type[pt] = parent_particle_type_arr_local[rep_hit[t]];
+        pt++;
     }
+	processed_tracks[0] = pt;
     event_info[event[0]].num_tracks = processed_tracks[0];
     // ----- Step 5: Store Global Event Information -----
     for (int d = 0; d < 3; d++) {
