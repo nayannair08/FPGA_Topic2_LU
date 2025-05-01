@@ -99,7 +99,8 @@ int main() {
     //std::string directory_path = "/nethome/sbommu3/FPGA/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
     //std::string directory_path = "/nethome/sramanath3/project/FPGA_Topic2_LU/2025_Spring/topic2/event000041188/"; // Adjust to your directory
     // Raw data containers (vectors to temporarily hold file data)
-    const std::string input_base  = "/nethome/sbommu3/FPGA/project_2/FPGA_Topic2_LU/2025_Spring/topic2/converted";
+    // const std::string input_base  = "/nethome/sbommu3/FPGA/project_2/FPGA_Topic2_LU/2025_Spring/topic2/converted";
+    const std::string input_base  = "/nethome/vvenkata35/project/FPGA_Topic2_LU/2025_Spring/topic2/event_dir";
     //const std::string input_base  = "./converted";
     const std::string output_base = "./output";
 

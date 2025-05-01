@@ -4,6 +4,7 @@
 #include <ap_fixed.h>
 #include <hls_math.h>
 #include <cmath> // for std::isnan
+#include <hls_stream.h>
 
 // You may choose to use ap_fixed<16,5> if desired, but here we use float.
 typedef float data_t;
@@ -41,21 +42,21 @@ struct EventInfo {
 // Prototype for the HLS kernel function that reconstructs the tracks.
 // The new parameter "intt_required" implements the inner tracker requirement.
 void compute_tracks_HLS(
-    const int edge_index[NUM_EVENTS][2][MAX_EDGES],
-    const data_t model_edge_probability[NUM_EVENTS][MAX_EDGES],
-    const int num_edges[NUM_EVENTS],
-    const int layer_id[NUM_EVENTS][MAX_HITS],
-    const int n_pixels_arr[NUM_EVENTS][MAX_HITS],
-    const data_t hit_cartesian[NUM_EVENTS][MAX_HITS][3],
-    const data_t particle_id_arr[NUM_EVENTS][MAX_HITS],
-    const data_t energy_arr[NUM_EVENTS][MAX_HITS],
-    const data_t momentum_arr[NUM_EVENTS][MAX_HITS][3],
-    const data_t track_origin_arr[NUM_EVENTS][MAX_HITS][3],
-    const int trigger_node_arr[NUM_EVENTS][MAX_HITS],
-    const data_t particle_type_arr[NUM_EVENTS][MAX_HITS],
-    const data_t parent_particle_type_arr[NUM_EVENTS][MAX_HITS],
-    const int num_hits[NUM_EVENTS],
-    const data_t interaction_point_arr[NUM_EVENTS][3],
+    int edge_index[NUM_EVENTS][2][MAX_EDGES],
+    data_t model_edge_probability[NUM_EVENTS][MAX_EDGES],
+    int num_edges[NUM_EVENTS],
+    int layer_id[NUM_EVENTS][MAX_HITS],
+    int n_pixels_arr[NUM_EVENTS][MAX_HITS],
+    data_t hit_cartesian[NUM_EVENTS][MAX_HITS][3],
+    data_t particle_id_arr[NUM_EVENTS][MAX_HITS],
+    data_t energy_arr[NUM_EVENTS][MAX_HITS],
+    data_t momentum_arr[NUM_EVENTS][MAX_HITS][3],
+    data_t track_origin_arr[NUM_EVENTS][MAX_HITS][3],
+    int trigger_node_arr[NUM_EVENTS][MAX_HITS],
+    data_t particle_type_arr[NUM_EVENTS][MAX_HITS],
+    data_t parent_particle_type_arr[NUM_EVENTS][MAX_HITS],
+    int num_hits[NUM_EVENTS],
+    data_t interaction_point_arr[NUM_EVENTS][3],
     bool trigger[NUM_EVENTS],
     bool has_trigger_pair[NUM_EVENTS],
     bool intt_required[NUM_EVENTS],
